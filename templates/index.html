@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASL to Text Converter</title>
+   <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        min-height: 100vh;
+        color: #ffffff;
+    }
+
+    .container {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    .header {
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .header h1 {
+        font-size: 2.8rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #00f5a0, #00d9f5);
+        -webkit-background-clip: text;
+        background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+    }
+
+    .header p {
+        opacity: 0.8;
+        font-size: 1.1rem;
+    }
+
+    .main-content {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 30px;
+    }
+
+    /* Glass Card Style */
+    .video-section,
+    .sidebar {
+        background: rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 25px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .video-container {
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    #videoStream {
+        width: 100%;
+        border-radius: 15px;
+    }
+
+    .video-placeholder {
+        height: 420px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 1.1rem;
+    }
+
+    .controls {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 12px 26px;
+        border-radius: 50px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #00f5a0, #00d9f5);
+    }
+
+    .btn-danger {
+        background: linear-gradient(90deg, #ff416c, #ff4b2b);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .btn-warning {
+        background: linear-gradient(90deg, #f7971e, #ffd200);
+        color: #222;
+    }
+
+    .status-panel h3 {
+        margin-bottom: 15px;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .status-item {
+        background: rgba(255, 255, 255, 0.06);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .status-label {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-bottom: 4px;
+    }
+
+    .status-value {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+
+    .prediction-progress {
+        margin-top: 8px;
+        width: 100%;
+        height: 6px;
+        background: rgba(255,255,255,0.1);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .prediction-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #00f5a0, #00d9f5);
+        width: 0%;
+        transition: width 0.2s ease;
+    }
+
+    .sentence-display {
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .sentence-display h4 {
+        margin-bottom: 10px;
+    }
+
+    .sentence-text {
+        background: rgba(0,0,0,0.3);
+        padding: 15px;
+        border-radius: 10px;
+        min-height: 70px;
+        line-height: 1.6;
+        font-size: 1.05rem;
+    }
+
+    .actions {
+        margin-top: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .audio-player {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 10px;
+    }
+
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 14px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+    }
+
+    .notification.success {
+        background: rgba(0, 245, 160, 0.8);
+    }
+
+    .notification.error {
+        background: rgba(255, 75, 43, 0.85);
+    }
+
+    .notification.info {
+        background: rgba(0, 217, 245, 0.85);
+    }
+
+    .notification.show {
+        transform: translateX(0);
+    }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .tab-btn.active {
+        background: linear-gradient(90deg, #00f5a0, #00d9f5);
+        border: none;
+        color: #0f2027;
+    }
+
+    .mode-content {
+        display: none;
+    }
+
+    .mode-content.active {
+        display: block;
+    }
+
+    .history-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        backdrop-filter: blur(8px);
+    }
+
+    .history-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 15px;
+    }
+
+    .history-list {
+        overflow-y: auto;
+        flex: 1;
+        padding-right: 10px;
+    }
+
+    /* Custom Scrollbar */
+    .history-list::-webkit-scrollbar {
+        width: 6px;
+    }
+    .history-list::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+    .history-list::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.2);
+        border-radius: 10px;
+    }
+
+    .history-item {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .history-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .history-info {
+        flex: 1;
+    }
+
+    .history-text {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+
+    .history-time {
+        font-size: 0.75rem;
+        opacity: 0.5;
+    }
+
+    .delete-btn {
+        background: none;
+        border: none;
+        color: #ff416c;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background 0.2s ease;
+    }
+
+    .delete-btn:hover {
+        background: rgba(255, 65, 108, 0.1);
+    }
+
+    @media (max-width: 900px) {
+        .main-content {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="position: absolute; top: 20px; right: 20px; font-size: 0.9rem; color: rgba(255,255,255,0.7); display: flex; align-items: center; gap: 15px;">
+                <button onclick="viewHistory()" style="background:none; border:none; color:#00d9f5; cursor:pointer; font-weight:600; font-size: 0.9rem; display: flex; align-items: center; gap: 5px;">
+                    📜 History
+                </button>
+                <div style="height: 15px; width: 1px; background: rgba(255,255,255,0.2);"></div>
+                <div>
+                    Welcome, <span style="color: #00f5a0; font-weight: 600;">{{ user_name if user_name else user_email }}</span> | 
+                    <a href="/logout" style="color: #ff416c; text-decoration: none; font-weight: 600; margin-left: 5px;">Logout</a>
+                </div>
+            </div>
+            <h1>ASL to Text Converter</h1>
+            <p>Real-time American Sign Language Recognition</p>
+        </div>
+
+        <div class="main-content">
+            <div class="video-section">
+                <div class="video-container">
+                    <div class="video-placeholder" id="videoPlaceholder">
+                        <div>
+                            <div class="loading" id="loading">
+                                <div class="spinner"></div>
+                                <p>Starting camera...</p>
+                            </div>
+                            <p id="placeholderText">Click "Start Camera" to begin</p>
+                        </div>
+                    </div>
+                    <img id="videoStream" style="display: none; width:100%;" alt="video feed" />
+                    <canvas id="captureCanvas" style="display:none;"></canvas>
+                    <canvas id="overlayCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;"></canvas>
+                </div>
+                
+                <div class="controls">
+                    <div id="alpControls" class="mode-content">
+                        <button class="btn btn-secondary" style="width:100%;" onclick="recognizeAlphabet()">
+                            🔤 Recognize Alphabet
+                        </button>
+                    </div>
+                    <div id="wordControls" class="mode-content active">
+                        <button class="btn btn-secondary" style="width:100%;" onclick="recognizeWord()">
+                            🎯 Recognize Word
+                        </button>
+                    </div>
+                    <button class="btn btn-danger" id="stopBtn" onclick="stopCamera()" style="display: none; width:100%; margin-top:10px;">
+                        ⏹️ Stop Camera
+                    </button>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="tabs">
+                    <button class="tab-btn active" id="wordTab" onclick="switchMode('word')">🎯 Word Mode</button>
+                    <button class="tab-btn" id="alpTab" onclick="switchMode('alphabet')">🔤 Alphabet Mode</button>
+                </div>
+                <div class="status-panel">
+                    <h3>📊 Live Status</h3>
+                    <div class="status-item mode-content active" id="wordStatus">
+                        <div class="status-label">Detected Word:</div>
+                        <div class="status-value prediction-status" id="currentSign">-</div>
+                    </div>
+                    <div class="status-item mode-content" id="alpStatus">
+                        <div class="status-label">Detected Alphabet:</div>
+                        <div class="status-value prediction-status" id="currentAlp">-</div>
+                        <div class="prediction-progress">
+                            <div class="prediction-progress-bar" id="progressBar"></div>
+                        </div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Camera Status:</div>
+                        <div class="status-value" id="cameraStatus">Stopped</div>
+                    </div>
+                </div>
+
+                <div class="sentence-display">
+                    <h4>📝 Constructed Sentence</h4>
+                    <div class="sentence-text" id="sentenceText">Your sentence will appear here...</div>
+                    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap: wrap;">
+                        <button class="btn btn-secondary" onclick="speakSentence()" style="flex:1; min-width: 140px;">🔊 Speak</button>
+                        <button class="btn btn-primary" onclick="saveHistory()" style="flex:1; min-width: 140px;">💾 Save</button>
+                        <button class="btn btn-warning" onclick="clearSentence()" style="flex:1; min-width: 140px;">🗑️ Clear</button>
+                    </div>
+                </div>
+
+                <div class="sentence-display">
+                    <h4>✏️ Manual Input</h4>
+                    <textarea id="manualInput" rows="3" placeholder="Type a sentence to speak..." style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.2);color:#fff;"></textarea>
+                    <button class="btn btn-secondary" onclick="speakInput()" style="width:100%;margin-top:8px;">🔊 Speak Input</button>
+                </div>
+
+                <div class="audio-player" id="audioPlayer" style="display:none;">
+                    <audio id="audioElement" controls>
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+            </div>
+        </div>
+    <div class="history-modal" id="historyModal">
+        <div class="history-card">
+            <div class="history-header">
+                <h3>📜 Saved History</h3>
+                <button onclick="closeHistory()" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <p style="text-align:center; opacity:0.6; padding-top:20px;">Loading history...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        let currentMode = 'word';
+        let cameraActive = false;
+        let updateInterval = null;
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update tabs
+            document.getElementById('wordTab').classList.toggle('active', mode === 'word');
+            document.getElementById('alpTab').classList.toggle('active', mode === 'alphabet');
+            
+            // Update mode content visibility
+            document.querySelectorAll('.mode-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            if (mode === 'word') {
+                document.getElementById('wordStatus').classList.add('active');
+                document.getElementById('wordControls').classList.add('active');
+            } else {
+                document.getElementById('alpStatus').classList.add('active');
+                document.getElementById('alpControls').classList.add('active');
+            }
+            
+            // Notify backend
+            fetch('/set_mode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode })
+            })
+            .then(res => res.json())
+            .then(data => {
+                showNotification(`Switched to ${mode} mode`, 'info');
+                // Force sentence update to reflect new progress
+                updateSentence();
+            })
+            .catch(err => console.error('switchMode error', err));
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+
+        function startCamera() {
+            fetch('/start_camera', { method: 'POST' })
+                .then(() => {
+                    const img = document.getElementById('videoStream');
+                    img.src = '/video_feed';
+                    img.style.display = 'block';
+                    document.getElementById('videoPlaceholder').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'inline-block';
+                    document.getElementById('cameraStatus').textContent = 'Active';
+                    cameraActive = true;
+                    // Poll sentence updates while camera active
+                    updateInterval = setInterval(updateSentence, 300);
+                    showNotification('Camera started (server-side)');
+                })
+                .catch(err => {
+                    console.error('startCamera error', err);
+                    showNotification('Failed to start camera', 'error');
+                });
+        }
+
+        function stopCamera() {
+            fetch('/stop_camera', { method: 'POST' })
+                .then(() => {
+                    const img = document.getElementById('videoStream');
+                    img.src = '';
+                    img.style.display = 'none';
+                    document.getElementById('videoPlaceholder').style.display = 'flex';
+                    document.getElementById('stopBtn').style.display = 'none';
+                    document.getElementById('cameraStatus').textContent = 'Stopped';
+                    cameraActive = false;
+                    if (updateInterval) { clearInterval(updateInterval); updateInterval = null; }
+                    showNotification('Camera stopped (server-side)');
+                })
+                .catch(err => {
+                    console.error('stopCamera error', err);
+                    showNotification('Failed to stop camera', 'error');
+                });
+        }
+
+        let lastSentence = '';
+
+        function updateSentence() {
+            fetch('/get_sentence')
+                .then(response => response.json())
+                .then(data => {
+                    const sentenceElement = document.getElementById('sentenceText');
+                    const currentSignElement = document.getElementById('currentSign');
+                    const currentAlpElement = document.getElementById('currentAlp');
+                    const progressBar = document.getElementById('progressBar');
+
+                    currentSignElement.textContent = data.current_sign || '-';
+                    currentAlpElement.textContent = data.current_alphabet || '-';
+                    const percentage = (data.prediction_count / data.threshold_frames) * 100;
+                    progressBar.style.width = percentage + '%';
+
+                    const currentSentence = data.sentence || 'Your sentence will appear here...';
+                    if (currentSentence !== lastSentence) {
+                        sentenceElement.textContent = currentSentence;
+                        lastSentence = currentSentence;
+                    }
+                })
+                .catch(err => console.error('updateSentence error', err));
+        }
+
+        function recognizeWord() {
+            if (!cameraActive) {
+                startCamera();
+                return;
+            }
+
+            fetch('/recognize_word', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('sentenceText').textContent = data.sentence;
+                        lastSentence = data.sentence;
+                        showNotification(`Recognized: ${data.word}`, 'success');
+                    } else {
+                        showNotification(data.message || 'Recognition failed', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('recognizeWord error', err);
+                    showNotification('Failed to recognize word', 'error');
+                });
+        }
+
+        function recognizeAlphabet() {
+            if (!cameraActive) {
+                startCamera();
+                return;
+            }
+
+            fetch('/recognize_alphabet', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('sentenceText').textContent = data.sentence;
+                        lastSentence = data.sentence;
+                        showNotification(`Recognized Alp: ${data.alphabet}`, 'success');
+                    } else {
+                        showNotification(data.message || 'Recognition failed', 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('recognizeAlphabet error', err);
+                    showNotification('Failed to recognize alphabet', 'error');
+                });
+        }
+
+        function clearSentence() {
+            fetch('/clear_sentence', { method: 'POST', headers: { 'Content-Type': 'application/json' }})
+                .then(() => {
+                    document.getElementById('sentenceText').textContent = 'Your sentence will appear here...';
+                    document.getElementById('audioPlayer').style.display = 'none';
+                    showNotification('Sentence cleared!');
+                })
+                .catch(err => { console.error(err); showNotification('Failed to clear sentence', 'error'); });
+        }
+
+        function speakSentence() {
+            const sentenceText = document.getElementById('sentenceText').textContent;
+            if (sentenceText === 'Your sentence will appear here...') {
+                showNotification('No sentence to speak', 'error');
+                return;
+            }
+
+            const audioPlayer = document.getElementById('audioPlayer');
+            const audioElement = document.getElementById('audioElement');
+
+            showNotification('Generating speech...', 'info');
+
+            fetch('/speak_sentence', { method: 'POST', headers: { 'Content-Type': 'application/json' }})
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        audioElement.src = data.audio_url;
+                        audioPlayer.style.display = 'block';
+                        audioElement.play().catch(() => {});
+                        showNotification('Audio ready', 'success');
+                    } else {
+                        showNotification(data.message || 'Failed to generate speech', 'error');
+                    }
+                })
+                .catch(err => { console.error(err); showNotification('Failed to generate speech', 'error'); });
+        }
+
+        function submitInput() {
+            const input = document.getElementById('manualInput').value.trim();
+            if (!input) { showNotification('Please type a sentence first', 'error'); return; }
+
+            fetch('/set_sentence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: input }) })
+                .then(res => res.json())
+                .then(data => { if (data.status === 'success') { document.getElementById('sentenceText').textContent = data.sentence; lastSentence = data.sentence; showNotification('Sentence set', 'success'); } else { showNotification(data.message || 'Failed to set sentence', 'error'); } })
+                .catch(err => { console.error(err); showNotification('Failed to set sentence', 'error'); });
+        }
+
+        function speakInput() {
+            const input = document.getElementById('manualInput').value.trim();
+            if (!input) { 
+                showNotification('Please type a sentence first', 'error'); 
+                return; 
+            }
+
+            const audioPlayer = document.getElementById('audioPlayer');
+            const audioElement = document.getElementById('audioElement');
+
+            showNotification('Generating speech...', 'info');
+
+            fetch('/speak_sentence', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: input }) })
+                .then(res => res.json())
+                .then(data => { 
+                    if (data.status === 'success') { 
+                        audioElement.src = data.audio_url; 
+                        audioPlayer.style.display = 'block'; 
+                        audioElement.play().catch(()=>{}); 
+                        showNotification('Audio ready', 'success'); 
+                    } else { 
+                        showNotification(data.message || 'Failed to generate speech', 'error'); 
+                    } 
+                })
+                .catch(err => { console.error(err); showNotification('Failed to generate speech', 'error'); });
+        }
+
+        document.getElementById('audioElement').addEventListener('ended', function() { showNotification('Playback completed', 'info'); });
+        document.getElementById('audioElement').addEventListener('error', function() { showNotification('Audio playback error', 'error'); });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            // Don't trigger shortcuts if user is typing in an input or textarea
+            const isTyping = event.target.tagName === 'TEXTAREA' || event.target.tagName === 'INPUT';
+            
+            if (!isTyping) {
+                if (event.key === 'c' || event.key === 'C') {
+                    clearSentence();
+                } else if (event.key === 's' || event.key === 'S') {
+                    speakSentence();
+                } else if (event.key === 'r' || event.key === 'R') {
+                    recognizeWord();
+                } else if (event.key === 'a' || event.key === 'A') {
+                    recognizeAlphabet();
+                } else if (event.key === ' ') {
+                    event.preventDefault();
+                    if (cameraActive) stopCamera(); else startCamera();
+                }
+            }
+        });
+
+        // History Functions
+        function saveHistory() {
+            const sentenceText = document.getElementById('sentenceText').textContent;
+            if (sentenceText === 'Your sentence will appear here...' || !sentenceText.trim()) {
+                showNotification('No sentence to save', 'error');
+                return;
+            }
+
+            showNotification('Saving to history...', 'info');
+
+            fetch('/save_history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    showNotification(data.message, 'success');
+                } else {
+                    showNotification(data.message || 'Failed to save', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('saveHistory error', err);
+                showNotification('Connection error', 'error');
+            });
+        }
+
+        function viewHistory() {
+            document.getElementById('historyModal').style.display = 'flex';
+            fetchHistory();
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').style.display = 'none';
+        }
+
+        function fetchHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            fetch('/get_history')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.history.length === 0) {
+                        historyList.innerHTML = '<p style="text-align:center; opacity:0.6; padding-top:20px;">No history saved yet.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.history.forEach(item => {
+                        html += `
+                            <div class="history-item" id="history-${item._id}">
+                                <div class="history-info">
+                                    <div class="history-text">${item.sentence}</div>
+                                    <div class="history-time">${item.timestamp}</div>
+                                </div>
+                                <button class="delete-btn" onclick="deleteHistoryItem('${item._id}')" title="Delete">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    historyList.innerHTML = html;
+                } else {
+                    historyList.innerHTML = '<p style="text-align:center; color:#ff416c; padding-top:20px;">Failed to load history.</p>';
+                }
+            })
+            .catch(err => {
+                console.error('fetchHistory error', err);
+                historyList.innerHTML = '<p style="text-align:center; color:#ff416c; padding-top:20px;">Connection error.</p>';
+            });
+        }
+
+        function deleteHistoryItem(id) {
+            if (!confirm('Are you sure you want to delete this item?')) return;
+
+            fetch('/delete_history_item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const el = document.getElementById(`history-${id}`);
+                    if (el) el.remove();
+                    showNotification('Item deleted', 'success');
+                    
+                    // If no more items, show empty message
+                    const historyList = document.getElementById('historyList');
+                    if (historyList.children.length === 0) {
+                        historyList.innerHTML = '<p style="text-align:center; opacity:0.6; padding-top:20px;">No history saved yet.</p>';
+                    }
+                } else {
+                    showNotification(data.message || 'Deletion failed', 'error');
+                }
+            })
+            .catch(err => {
+                console.error('deleteHistoryItem error', err);
+                showNotification('Connection error', 'error');
+            });
+        }
+
+        // Close modal when clicking outside the card
+        window.onclick = function(event) {
+            const modal = document.getElementById('historyModal');
+            if (event.target == modal) {
+                closeHistory();
+            }
+        }
+
+        // Clean up when leaving page
+        window.addEventListener('beforeunload', function() { if (cameraActive) { navigator.sendBeacon('/stop_camera'); } });
+        
+        // Removed auto-start on load as requested
+        // window.onload = startCamera;
+    </script>
+</body>
+</html>
