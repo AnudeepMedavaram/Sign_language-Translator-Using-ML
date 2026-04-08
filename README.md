@@ -22,3 +22,10 @@ This project translates American Sign Language (ASL) hand gestures into text in 
 ```bash
 pip install -r requirements.txt
 python app.py
+
+## Demo Screenshots
+
+![Screenshot 1](proj img1.png)
+![Screenshot 2](proj img2.png)
+![Screenshot 3](proj img3.png)
+
